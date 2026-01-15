@@ -114,17 +114,25 @@ class GLODAlgorithm:
         """
         Create rough seed Vi (Algorithm 1 dari paper).
         
+        Sesuai Algorithm 1, line 8:
+        Vi ← ({vi} ∪ N(vi))
+        
         Proses:
-        1. Mulai dengan center_node
-        2. Secara iteratif tambahkan tetangga dengan NC (Common Neighbor Similarity) tertinggi
-        3. Lakukan mini expansion untuk memperkuat seed
-        4. Return rough seed yang sudah diperkuat
+        1. Mulai dengan center_node vi
+        2. Tambahkan neighbors dengan NC (Common Neighbor Similarity) tertinggi
+        3. Terus tambahkan neighbors dengan NC tertinggi sampai tidak ada lagi yang > 0
+        4. Return rough seed Vi
+        
+        PENTING: Rough seed TIDAK diperluas pada tahap ini!
+        Ekspansi dilakukan di tahap EXPANSION PHASE (Algorithm 2)
         """
         rough_seed = {center_node}
         neighbors = set(self.graph.neighbors(center_node))
         available_neighbors = neighbors - rough_seed
         
-        # Fase koarsening: tambahkan tetangga dengan NC tertinggi secara iteratif
+        # Fase konstruksi rough seed: tambahkan tetangga dengan NC tertinggi secara iteratif
+        # Sesuai Algorithm 1, Line 8: Vi ← ({vi} ∪ N(vi))
+        # Iterasi sampai tidak ada neighbor dengan NC > 0
         while available_neighbors:
             nc_scores = [
                 (neighbor, self.common_neighbor_similarity(center_node, neighbor)) 
@@ -135,60 +143,13 @@ class GLODAlgorithm:
             
             best_neighbor, best_nc = nc_scores[0]
             
+            # Add neighbor jika NC > 0 (ada common neighbors)
             if best_nc > 0:
                 rough_seed.add(best_neighbor)
                 available_neighbors = neighbors - rough_seed
             else:
+                # Tidak ada neighbor lagi dengan NC > 0, stop constructing rough seed
                 break
-        
-        # Mini expansion phase untuk memperkuat rough seed (Algorithm 1, line 5)
-        # Ekspansi iteratif dengan constraints ketat untuk memastikan cohesion tinggi
-        mini_expanded = True
-        mini_iterations = 0
-        max_mini_iterations = 5  # Batasi iterasi mini expansion
-        
-        while mini_expanded and mini_iterations < max_mini_iterations:
-            mini_expanded = False
-            current_fitness = self.fitness_function(rough_seed)
-            
-            # Shell nodes untuk rough seed
-            shell_nodes = set()
-            for node in rough_seed:
-                for neighbor in self.graph.neighbors(node):
-                    if neighbor not in rough_seed:
-                        shell_nodes.add(neighbor)
-            
-            if not shell_nodes:
-                break
-            
-            # Cari node terbaik untuk ditambahkan ke rough seed
-            best_candidate = None
-            best_score = float('-inf')
-            
-            for candidate in shell_nodes:
-                test_seed = rough_seed.copy()
-                test_seed.add(candidate)
-                
-                # Untuk rough seed, gunakan fitness dan omega dengan threshold ketat
-                fitness_gain = self.fitness_function(test_seed) - current_fitness
-                omega_val = self.omega(candidate, rough_seed)
-                
-                # Score untuk mini expansion: prioritaskan fitness gain
-                if fitness_gain > 0.0001:  # Threshold ketat untuk rough seed
-                    score = fitness_gain
-                    if score > best_score:
-                        best_score = score
-                        best_candidate = candidate
-                elif omega_val > 0.5:  # Alternative: omega untuk kemiripan tinggi
-                    score = omega_val
-                    if score > best_score:
-                        best_score = score
-                        best_candidate = candidate
-            
-            if best_candidate is not None:
-                rough_seed.add(best_candidate)
-                mini_expanded = True
-                mini_iterations += 1
         
         return rough_seed
     
