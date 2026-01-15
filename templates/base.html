@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}GLOD Community Detector{% endblock %}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background: #f5f6fa;
+        color: #222;
+        overflow-x: hidden;
+      }
+      .app-container {
+        display: flex;
+        min-height: 100vh;
+      }
+      .sidebar {
+        width: 280px;
+        background: #fff;
+        border-right: 1px solid #e5e5e5;
+        padding-top: 32px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+        transition: transform 0.3s ease;
+        z-index: 1000;
+      }
+      .sidebar.collapsed {
+        transform: translateX(-100%);
+      }
+      .sidebar .logo {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 32px;
+        color: #1976d2;
+        letter-spacing: 0.5px;
+        margin-top: 20px;
+      }
+      .menu {
+        width: 90%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 20px;
+      }
+      .menu a {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        color: #1976d2;
+        text-decoration: none;
+        border-radius: 8px;
+        font-size: 1.08rem;
+        font-weight: 500;
+        transition: background 0.2s, color 0.2s;
+        background: #eaf1ff;
+        border: none;
+      }
+      .menu a.active,
+      .menu a:hover {
+        background: #1976d2;
+        color: #fff;
+        font-weight: 600;
+      }
+      .menu .icon {
+        font-size: 1.3em;
+        width: 24px;
+        text-align: center;
+      }
+      .main-content {
+        flex: 1;
+        margin-left: 280px;
+        background: #f5f6fa;
+        transition: margin-left 0.3s ease;
+        padding: 20px;
+      }
+      .main-content.sidebar-collapsed {
+        margin-left: 0;
+      }
+      .hamburger-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: #1976d2;
+        color: #fff;
+        border: none;
+        width: 45px;
+        height: 45px;
+        padding: 0;
+        border-radius: 8px;
+        font-size: 1.5rem;
+        cursor: pointer;
+        z-index: 1001;
+        transition: background 0.2s;
+      }
+      .hamburger-btn:hover {
+        background: #1565c0;
+      }
+      @media (max-width: 768px) {
+        .hamburger-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 45px;
+          height: 45px;
+          padding: 0;
+        }
+        .sidebar {
+          width: 280px;
+        }
+        .sidebar.collapsed {
+          transform: translateX(-100%);
+        }
+        .main-content {
+          margin-left: 0;
+          padding-top: 80px;
+        }
+        .main-content.sidebar-collapsed {
+          margin-left: 0;
+        }
+      }
+    </style>
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Sidebar -->
+      <nav class="sidebar" id="sidebar">
+        <div class="logo">GLOD</div>
+        <div class="menu">
+          <a href="/" class="nav-link" data-menu="beranda">
+            <span class="icon">🏠</span>Beranda
+          </a>
+          <a href="/uniprot/input/" class="nav-link" data-menu="input-data">
+            <span class="icon">🧬</span>Input Data Gen
+          </a>
+          <a href="/preprocessing/" class="nav-link" data-menu="preprocessing">
+            <span class="icon">⚙️</span>Persiapan Data
+          </a>
+          <a href="/string/" class="nav-link" data-menu="string">
+            <span class="icon">🔗</span>STRING
+          </a>
+          <a href="/glod/process/" class="nav-link" data-menu="glod">
+            <span class="icon">🧩</span>Analisis GLOD
+          </a>
+        </div>
+      </nav>
+
+      <!-- Hamburger Button -->
+      <button class="hamburger-btn" id="hamburgerBtn" aria-label="Buka/Tutup Menu" title="Buka/Tutup Menu">
+        <i class="fas fa-bars"></i>
+      </button>
+
+      <!-- Main Content -->
+      <div class="main-content" id="mainContent">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // Sidebar Toggle Functionality
+      const hamburgerBtn = document.getElementById('hamburgerBtn');
+      const sidebar = document.getElementById('sidebar');
+      const mainContent = document.getElementById('mainContent');
+      let sidebarOpen = true;
+
+      // Set initial state dari localStorage
+      const sidebarState = localStorage.getItem('sidebarOpen');
+      if (sidebarState === 'false') {
+        sidebarOpen = false;
+        sidebar.classList.add('collapsed');
+        mainContent.classList.add('sidebar-collapsed');
+      }
+
+      // Toggle hamburger button
+      hamburgerBtn.addEventListener('click', () => {
+        sidebarOpen = !sidebarOpen;
+        
+        if (sidebarOpen) {
+          sidebar.classList.remove('collapsed');
+          mainContent.classList.remove('sidebar-collapsed');
+          console.log('%c✅ Menu dibuka', 'color: #4CAF50; font-weight: bold; font-size: 14px;');
+        } else {
+          sidebar.classList.add('collapsed');
+          mainContent.classList.add('sidebar-collapsed');
+          console.log('%c❌ Menu ditutup', 'color: #ff6b6b; font-weight: bold; font-size: 14px;');
+        }
+        
+        // Simpan state ke localStorage
+        localStorage.setItem('sidebarOpen', sidebarOpen);
+      });
+
+      // Log ketika user klik menu item
+      const navLinks = document.querySelectorAll('.nav-link');
+      navLinks.forEach((link) => {
+        link.addEventListener('click', (e) => {
+          const menuName = link.getAttribute('data-menu');
+          const href = link.getAttribute('href');
+          console.log(`%c📍 Navigasi ke: ${menuName}`, 'color: #2196F3; font-weight: bold; font-size: 13px;');
+          console.log(`   URL: ${href}`);
+        });
+      });
+
+      // Log ketika halaman selesai dimuat
+      window.addEventListener('load', () => {
+        console.log('%c🚀 Halaman GLOD Community Detector berhasil dimuat', 'color: #FF9800; font-weight: bold; font-size: 14px;');
+        console.log('%c💡 Tips: Klik ☰ untuk membuka/menutup menu sidebar', 'color: #9C27B0; font-size: 12px;');
+      });
+
+      // Log untuk setiap interaksi user di halaman
+      document.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON' && !e.target.id.includes('hamburger')) {
+          console.log(`%c🖱️ Tombol diklik: ${e.target.textContent || e.target.getAttribute('title')}`, 'color: #00BCD4; font-size: 12px;');
+        }
+      });
+
+      document.addEventListener('submit', (e) => {
+        console.log(`%c📤 Form disubmit`, 'color: #4CAF50; font-size: 12px;');
+      });
+    </script>
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

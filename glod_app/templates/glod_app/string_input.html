@@ -1,0 +1,592 @@
+{% extends "base.html" %}
+
+{% block title %}Pembangunan Jaringan Protein{% endblock %}
+
+{% block extra_head %}
+<style>
+:root{--primary-blue:#1976d2}
+.btn-primary{background-color:var(--primary-blue)!important;border-color:var(--primary-blue)!important}
+.btn-primary:hover{background-color:#1565c0!important;border-color:#1565c0!important}
+.bg-primary{background-color:var(--primary-blue)!important}
+.card-header.bg-primary{background-color:var(--primary-blue)!important}
+.start-btn{background:var(--primary-blue)!important}
+.page-title {
+  font-size: 2rem;
+  color: #1976d2;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 0.5px;
+  margin-bottom: 25px;
+}
+
+.section-heading {
+  color: #1976d2;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 13px;
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-center align-items-center mb-3">
+            <h1 class="page-title">Pembangunan Jaringan Protein</h1>
+          </div>
+
+          <div class="card mb-3">
+            <div class="card-body">
+              <h5 class="card-title section-heading">Input Genes</h5>
+              <p class="card-text">
+                Total Genes untuk Visualisasi: <strong>{{ original_count }}</strong>
+              </p>
+              {% if original_count and original_count != total_genes %}
+        
+        {% if mapped_genes or total_nodes %}
+<div class="row g-3 mb-4">
+  
+  {% if mapped_genes %}
+  <div class="col-md-4">
+    <div class="card text-white bg-primary shadow-sm h-100">
+      <div class="card-body text-center">
+        <div class="small fw-semibold mb-1">
+          Mapped to STRING DB
+        </div>
+        <div class="display-6 fw-bold">
+          {{ mapped_genes }}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if total_nodes %}
+  <!-- Network Nodes -->
+  <div class="col-md-4">
+    <div class="card text-white bg-warning shadow-sm h-100">
+      <div class="card-body text-center">
+        <div class="small fw-semibold mb-1">
+          Network Nodes
+        </div>
+        <div class="display-6 fw-bold">
+          <span id="current-nodes-count">{{ total_nodes }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Network Edges -->
+  <div class="col-md-4">
+    <div class="card text-white bg-danger shadow-sm h-100">
+      <div class="card-body text-center">
+        <div class="small fw-semibold mb-1">
+          Network Edges
+        </div>
+        <div class="display-6 fw-bold">
+          <span id="current-edges-count">{{ total_edges }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endif %}
+{% endif %}
+
+{% if not network_data and not error %}
+<div class="text-center my-4">
+  <form method="post">
+  {% csrf_token %}
+  <input type="hidden" name="build_network" value="1" />
+  <input type="hidden" name="network_type" value="full" />
+
+  <!-- INPUT BERSEBELAHAN -->
+  <div class="row">
+    <!-- Confidence -->
+    <div class="col-md-6 mb-3">
+      <label for="confidence" class="form-label section-heading text-start d-block ms-3">Confidence Score</label>
+      <select class="form-select" name="confidence" id="confidence">
+        <option value="0.900" {% if selected_confidence == "0.900" %}selected{% endif %}>
+          Highest confidence (0.900)
+        </option>
+        <option value="0.700" {% if selected_confidence == "0.700" %}selected{% endif %}>
+          High confidence (0.700)
+        </option>
+        <option value="0.400" {% if selected_confidence == "0.400" %}selected{% endif %}>
+          Medium confidence (0.400)
+        </option>
+        <option value="0.150" {% if selected_confidence == "0.150" %}selected{% endif %}>
+          Low confidence (0.150)
+        </option>
+      </select>
+    </div>
+
+    <!-- Organism -->
+    <div class="col-md-6 mb-3">
+      <label for="organism" class="form-label section-heading text-start d-block ms-3">Organism</label>
+      <select class="form-select" name="organism" id="organism">
+        <option value="9606" {% if selected_organism == "9606" %}selected{% endif %}>Homo sapiens</option>
+        <option value="10090" {% if selected_organism == "10090" %}selected{% endif %}>Mus musculus</option>
+        <option value="10116" {% if selected_organism == "10116" %}selected{% endif %}>Rattus norvegicus</option>
+        <option value="7227" {% if selected_organism == "7227" %}selected{% endif %}>Drosophila melanogaster</option>
+        <option value="6239" {% if selected_organism == "6239" %}selected{% endif %}>Caenorhabditis elegans</option>
+        <option value="559292" {% if selected_organism == "559292" %}selected{% endif %}>Saccharomyces cerevisiae</option>
+        <option value="511145" {% if selected_organism == "511145" %}selected{% endif %}>Escherichia coli</option>
+        <option value="9913" {% if selected_organism == "9913" %}selected{% endif %}>Bos taurus</option>
+        <option value="9031" {% if selected_organism == "9031" %}selected{% endif %}>Gallus gallus</option>
+        <option value="7955" {% if selected_organism == "7955" %}selected{% endif %}>Danio rerio</option>
+        <option value="3702" {% if selected_organism == "3702" %}selected{% endif %}>Arabidopsis thaliana</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- BUTTON -->
+  <div class="text-center mt-3">
+    <button type="submit" class="btn btn-primary btn-lg px-5">
+      <i class="fas fa-cogs"></i> Bangun Jaringan Protein
+    </button>
+  </div>
+</form>
+
+  
+
+</div>
+{% endif %} 
+
+{% if network_data %}
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">Visualisasi Jaringan Protein</h5>
+  </div>
+  <div class="card-body">
+    {% csrf_token %}
+    <div id="network-container" style="height: 600px; border: 1px solid #ddd"></div>
+
+    <div class="mt-3">
+      <!-- Removed Reset Zoom, Center, and Enable Physics buttons as requested -->
+      <button class="btn btn-danger mb-2" onclick="removeIsolatedNodes()" title="Hapus Node Terisolasi">
+        <i class="fas fa-trash"></i> Hapus Node Terisolasi
+      </button>
+      <button class="btn btn-info mb-2" onclick="downloadExcel()" title="Download Network Excel (node1, node2)">
+        <i class="fas fa-table"></i> Download Excel
+      </button>
+      <button class="btn btn-success mb-2" onclick="downloadNetwork()" title="Download PNG (Ctrl+S)">
+        <i class="fas fa-download"></i> Download PNG
+      </button>
+      <button class="btn btn-primary mb-2" onclick="processGLOD()" title="Proses dengan Algoritma GLOD">
+        <i class="fas fa-project-diagram"></i> GLOD
+      </button>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+<script type="text/javascript">
+    // Mengambil data dari Django Context
+    const networkData = {{ network_data|safe }};
+
+    // REKONSTRUKSI: Bagian ini hilang di kode asli Anda (Nodes Definition)
+    const nodes = new vis.DataSet(networkData.nodes.map(node => ({
+          id: node.id,
+          label: node.label, // Asumsi properti label ada
+          title: node.title || node.label, // Tooltip
+          color: {
+              background: '#97C2FC',
+              border: '#2B7CE9',
+              highlight: {
+                  background: '#D2E5FF',
+                  border: '#2B7CE9'
+              }
+          },
+          font: { 
+              size: 14,
+              color: '#333'
+          },
+          margin: 10,
+          widthConstraint: { minimum: 60, maximum: 150 }
+      })));
+
+        const edges = new vis.DataSet(networkData.edges.map(edge => ({
+          from: edge.source,
+          to: edge.target,
+          width: 5, // Garis lebih tebal
+          length: 200,
+          color: {
+            color: '#222', // Warna lebih gelap
+            highlight: '#ff0000',
+            opacity: 1.0
+          },
+          label: edge.score ? edge.score.toFixed(3) : '', // Tampilkan combined score di edge
+          font: { color: '#222', size: 16, strokeWidth: 0 }, // Label edge lebih jelas
+          title: edge.score ? `Combined score: ${edge.score}` : '', // Tooltip score
+          smooth: {
+            type: 'continuous',
+            forceDirection: 'none',
+            roundness: 0.2
+          }
+        })));
+
+      const options = {
+          physics: {
+              enabled: true,
+              stabilization: { 
+                  iterations: 300,
+                  updateInterval: 50,
+                  onlyDynamicEdges: false,
+                  fit: true
+              },
+              barnesHut: {
+                  gravitationalConstant: -4000,  
+                  centralGravity: 0.05,          
+                  springLength: 250,             
+                  springConstant: 0.01,          
+                  damping: 0.98,                 
+                  avoidOverlap: 0.3              
+              },
+              maxVelocity: 20,
+              minVelocity: 0.05,
+              solver: 'barnesHut',
+              timestep: 0.4,
+              adaptiveTimestep: true
+          },
+          nodes: {
+              shape: 'circle',
+              size: 25,                              
+              borderWidth: 3,
+              mass: 2,                               
+              scaling: {
+                  min: 20,
+                  max: 40
+              }
+          },
+          edges: {
+              length: 200,                      
+              smooth: {
+                  type: 'continuous',
+                  forceDirection: 'none',
+                  roundness: 0.2
+              },
+              scaling: {
+                  min: 2,
+                  max: 10
+              }
+          },
+          interaction: {
+              hover: true,
+              selectConnectedEdges: false,
+              tooltipDelay: 200,
+              hideEdgesOnDrag: true,
+              hideNodesOnDrag: false,
+              zoomView: true,
+              dragView: true
+          },
+          layout: {
+              improvedLayout: false,             
+              clusterThreshold: 150,             
+              hierarchical: false,
+              randomSeed: 2                      
+          },
+          configure: false
+      };
+
+    
+      const container = document.getElementById('network-container');
+      let network = new vis.Network(container, { nodes: nodes, edges: edges }, options);
+
+      
+      network.on("stabilizationProgress", function(params) {
+          const progress = Math.round((params.iterations / params.total) * 100);
+          console.log('Stabilization progress:', progress + '%');
+      });
+
+      network.on("stabilizationIterationsDone", function() {
+          console.log('Network stabilized');
+          
+          setTimeout(() => {
+              network.setOptions({ physics: { enabled: false } });
+              const button = document.getElementById('physics-toggle');
+              if (button) {
+                  button.innerHTML = '<i class="fas fa-play"></i> Enable Physics';
+                  button.className = 'btn btn-success mb-2';
+              }
+              
+              // saveNetworkToSession();
+          }, 2000);
+      });
+
+
+  
+      setTimeout(() => {
+          network.fit({
+              animation: {
+                  duration: 1000,
+                  easingFunction: 'easeInOutQuad'
+              }
+          });
+      }, 1500);
+
+    // Removed resetZoom, centerNetwork, and togglePhysics functions as requested
+
+  function downloadNetwork() {
+      const canvas = document.querySelector('#network-container canvas');
+      if (canvas) {
+          const link = document.createElement('a');
+          link.download = 'protein-network-' + new Date().getTime() + '.png';
+          link.href = canvas.toDataURL('image/png', 1.0);
+          link.click();
+      } else {
+          alert('Cannot generate image. Please try again after the network has loaded.');
+      }
+  }
+
+  function removeIsolatedNodes() {
+      if (!network || !nodes || !edges) {
+          alert('Network belum tersedia');
+          return;
+      }
+
+      const allNodes = nodes.get();
+      const allEdges = edges.get();
+      
+      // Buat adjacency list untuk graf
+      const adjacencyList = {};
+      allNodes.forEach(node => {
+          adjacencyList[node.id] = [];
+      });
+      
+      allEdges.forEach(edge => {
+          if (adjacencyList[edge.from]) {
+              adjacencyList[edge.from].push(edge.to);
+          }
+          if (adjacencyList[edge.to]) {
+              adjacencyList[edge.to].push(edge.from);
+          }
+      });
+
+      // Cari semua komponen menggunakan BFS
+      const visited = new Set();
+      const components = [];
+      
+      function bfs(startNode) {
+          const queue = [startNode];
+          const component = new Set();
+          visited.add(startNode);
+          component.add(startNode);
+          
+          while (queue.length > 0) {
+              const node = queue.shift();
+              const neighbors = adjacencyList[node] || [];
+              
+              for (const neighbor of neighbors) {
+                  if (!visited.has(neighbor)) {
+                      visited.add(neighbor);
+                      component.add(neighbor);
+                      queue.push(neighbor);
+                  }
+              }
+          }
+          
+          return component;
+      }
+      
+      // Temukan semua komponen
+      for (const node of allNodes) {
+          if (!visited.has(node.id)) {
+              const component = bfs(node.id);
+              components.push(component);
+          }
+      }
+      
+      // Cari komponen terbesar (giant component)
+      let giantComponent = new Set();
+      let maxSize = 0;
+      
+      components.forEach(component => {
+          if (component.size > maxSize) {
+              maxSize = component.size;
+              giantComponent = component;
+          }
+      });
+      
+      // Identifikasi node yang tidak termasuk giant component
+      const nodesToRemove = allNodes.filter(node => !giantComponent.has(node.id));
+      
+      if (nodesToRemove.length === 0) {
+          alert('Semua node sudah terhubung dalam satu komponen utama.');
+          return;
+      }
+
+      const confirmMessage = `Ditemukan ${components.length} komponen terpisah.\n` +
+                           `Komponen terbesar memiliki ${giantComponent.size} node.\n` +
+                           `Akan menghapus ${nodesToRemove.length} node yang tidak terhubung ke komponen utama. Lanjutkan?`;
+      if (!confirm(confirmMessage)) {
+          return;
+      }
+
+      const nodeIdsToRemove = nodesToRemove.map(node => node.id);
+      nodes.remove(nodeIdsToRemove);
+      
+      // Hapus edge yang melibatkan node yang dihapus
+      const edgesToRemove = allEdges.filter(edge => 
+          nodeIdsToRemove.includes(edge.from) || nodeIdsToRemove.includes(edge.to)
+      );
+      edges.remove(edgesToRemove.map(edge => edge.id));
+
+      const currentNodesCount = nodes.get().length;
+      const currentEdgesCount = edges.get().length;
+      
+      const nodesCountElement = document.getElementById('current-nodes-count');
+      const edgesCountElement = document.getElementById('current-edges-count');
+      
+      if (nodesCountElement) nodesCountElement.textContent = currentNodesCount;
+      if (edgesCountElement) edgesCountElement.textContent = currentEdgesCount;
+
+      alert(`Berhasil menghapus ${nodesToRemove.length} node yang tidak terhubung ke komponen utama.\n` +
+            `Tersisa ${currentNodesCount} node dan ${currentEdgesCount} edge.`);
+  }
+
+  function downloadExcel() {
+      if (!network || !edges) {
+          alert('Network belum tersedia');
+          return;
+      }
+      
+      // Cek apakah library XLSX tersedia
+      if (typeof XLSX === 'undefined') {
+          alert('Library XLSX belum dimuat.');
+          return;
+      }
+
+      const currentEdges = edges.get();
+
+      const networkData = currentEdges.map(edge => ({
+          '#node1': edge.from,
+          'node2': edge.to
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(networkData);
+
+      ws['!cols'] = [
+          { width: 20 },
+          { width: 20 }
+      ];
+
+      XLSX.utils.book_append_sheet(wb, ws, "Network");
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const filename = `network-interactions-${timestamp}.xlsx`;
+
+      XLSX.writeFile(wb, filename);
+  }
+
+  // function saveNetworkToSession() {
+  //     // Disabled: No session saving required
+  // }
+
+  function processGLOD() {
+      console.log('processGLOD called');
+      
+      if (!network || !nodes || !edges) {
+          alert('Network belum tersedia');
+          console.error('Network, nodes, or edges not available');
+          return;
+      }
+
+      // Ambil data jaringan saat ini
+      const currentNodes = nodes.get();
+      const currentEdges = edges.get();
+
+      console.log('Current nodes:', currentNodes.length);
+      console.log('Current edges:', currentEdges.length);
+
+      if (currentNodes.length === 0 || currentEdges.length === 0) {
+          alert('Jaringan kosong. Tidak ada data untuk diproses.');
+          return;
+      }
+
+      // Konfirmasi dengan user
+      const confirmMsg = `Akan memproses jaringan dengan ${currentNodes.length} nodes dan ${currentEdges.length} edges menggunakan algoritma GLOD. Lanjutkan?`;
+      if (!confirm(confirmMsg)) {
+          return;
+      }
+
+      // Simpan data jaringan
+      const networkData = {
+          nodes: currentNodes.map(n => ({ id: n.id, label: n.label || n.id })),
+          edges: currentEdges.map(e => ({ 
+              source: e.from, 
+              target: e.to, 
+              score: parseFloat(e.label) || 0 
+          }))
+      };
+
+      console.log('Network data prepared:', networkData);
+
+      // Cari CSRF token - coba beberapa cara
+      let csrfToken = null;
+      
+      // Cara 1: Dari input field
+      const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+      if (csrfInput) {
+          csrfToken = csrfInput.value;
+      }
+      
+      // Cara 2: Dari cookie
+      if (!csrfToken) {
+          const cookieValue = document.cookie
+              .split('; ')
+              .find(row => row.startsWith('csrftoken='));
+          if (cookieValue) {
+              csrfToken = cookieValue.split('=')[1];
+          }
+      }
+
+      if (!csrfToken) {
+          alert('CSRF token tidak ditemukan. Mohon refresh halaman.');
+          console.error('CSRF token not found');
+          return;
+      }
+
+      console.log('CSRF token found:', csrfToken.substring(0, 10) + '...');
+
+      // Kirim data ke server menggunakan form POST
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/glod/process/';
+      form.style.display = 'none';
+
+      const csrfField = document.createElement('input');
+      csrfField.type = 'hidden';
+      csrfField.name = 'csrfmiddlewaretoken';
+      csrfField.value = csrfToken;
+      form.appendChild(csrfField);
+
+      const dataInput = document.createElement('input');
+      dataInput.type = 'hidden';
+      dataInput.name = 'network_data';
+      dataInput.value = JSON.stringify(networkData);
+      form.appendChild(dataInput);
+
+      document.body.appendChild(form);
+      
+      console.log('Submitting form to /glod/process/');
+      form.submit();
+  }
+</script>
+
+{% endif %} 
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

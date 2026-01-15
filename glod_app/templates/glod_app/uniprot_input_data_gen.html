@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+{% load uniprot_extras %}
+
+{% block title %}Input Data Gen - GLOD Community Detector{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Main wrapper centered like dashboard */
+  .inputgen-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    padding: 40px 20px 20px 20px;
+  }
+  
+  .inputgen-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 2px 16px rgba(25, 118, 210, 0.1);
+    padding: 38px 38px 32px 38px;
+    max-width: 1080px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+  }
+  .inputgen-title {
+    font-size: 2.3rem;
+    margin-bottom: 24px;
+    color: #1976d2;
+    text-align: center;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+  }
+
+  /* Tab Styling */
+  .inputgen-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    width: 100%;
+    justify-content: center;
+  }
+  .inputgen-tab {
+    padding: 12px 24px;
+    background: #e3f2fd;
+    color: #1976d2;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .inputgen-tab:hover {
+    background: #bbdefb;
+  }
+  .inputgen-tab.active {
+    background: #1976d2;
+    color: white;
+    border-color: #1976d2;
+  }
+
+  .inputgen-content {
+    padding: 24px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    flex: 1;
+    overflow-y: auto;
+  }
+  .inputgen-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+  }
+  .inputgen-content th,
+  .inputgen-content td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e5e5e5;
+  }
+  .inputgen-content th {
+    background: #f3f3f7;
+    color: #1976d2;
+    font-weight: bold;
+  }
+  .inputgen-content td {
+    color: #333;
+  }
+  .search-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    margin-bottom: 20px;
+    gap: 20px;
+  }
+  .search-section {
+    flex: 1;
+  }
+  .download-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .download-buttons a {
+    text-decoration: none;
+    padding: 10px 20px;
+    background-color: #2e7d32;
+    color: white;
+    border-radius: 5px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .download-buttons a:hover {
+    background-color: #1b5e20;
+  }
+
+  .search-section form {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+  }
+  .search-section input[type="text"] {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid #d0d0d0;
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+  }
+  .search-section input[type="text"]:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+  }
+  .search-section button {
+    padding: 10px 30px;
+    background-color: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+  }
+  .search-section button:hover {
+    background-color: #155a9c;
+  }
+
+  .upload-container {
+    display: flex;
+    gap: 30px;
+    width: 100%;
+    align-items: flex-start;
+  }
+  .upload-left {
+    flex: 0 0 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .upload-right {
+    flex: 1;
+    min-width: 0;
+  }
+  .upload-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .upload-form .file-upload-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .upload-form input[type="file"] {
+    flex: 1;
+    padding: 12px;
+    border: 2px dashed #1976d2;
+    border-radius: 8px;
+    background: #f5f9ff;
+    cursor: pointer;
+    font-size: 0.95rem;
+  }
+  .upload-form input[type="file"]:hover {
+    background: #e3f2fd;
+  }
+  .upload-form button {
+    padding: 12px 24px;
+    background: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+    white-space: nowrap;
+  }
+  .upload-form button:hover {
+    background: #155a9c;
+  }
+  .upload-info {
+    background: #e3f2fd;
+    padding: 15px;
+    border-radius: 8px;
+    color: #1976d2;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  .success-message {
+    background: #c8e6c9;
+    color: #2e7d32;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-weight: 500;
+  }
+  .error-message {
+    background: #ffcdd2;
+    color: #c62828;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-weight: 500;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="inputgen-wrapper">
+  <div class="inputgen-card">
+  <div class="inputgen-title">Pilih Metode Input Data Gen</div>
+  <div class="inputgen-tabs">
+    <button class="inputgen-tab active" id="tab-uniprot" onclick="showTab('uniprot')">
+      Berdasarkan Nama Penyakit
+    </button>
+    <button class="inputgen-tab" id="tab-upload" onclick="showTab('upload')">
+      Input Manual Daftar Gen
+    </button>
+  </div>
+  <div class="inputgen-content" id="content-uniprot">
+    <h2 style="color: #1976d2; font-size: 1.1rem; margin-bottom: 18px">
+      Cari Berdasarkan Nama Penyakit
+    </h2>
+
+    <div class="search-header">
+      <div class="search-section">
+        <form action="{% url 'uniprot_search' %}" method="POST">
+          {% csrf_token %}
+          <input type="text" name="keyword" placeholder="Masukkan keyword pencarian (contoh: breast cancer)" value="{{ keyword }}" required />
+          <button type="submit">Cari</button>
+        </form>
+      </div>
+
+      {% if results %}
+      <div class="download-buttons">
+        <a href="{% url 'uniprot_download' %}?type=excel&q={{ keyword }}" class="excel-btn">
+          Download Excel
+        </a>
+        <a href="{% url 'preprocessing_use_data' %}?source=search&q={{ keyword }}" style="background-color: #1976d2;">
+          Gunakan data ini
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if error %}
+    <p style="color: red">{{ error }}</p>
+    {% endif %}
+    {% if results %}
+    <div style="margin: 20px 0">
+      <strong>Total data ditemukan: {{ total_results }}</strong>
+      <span style="margin-left: 15px">Menampilkan semua {{ results|length }} data</span>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Accession</th>
+          <th>Protein Name</th>
+          <th>Gene Symbol</th>
+          <th>Organism</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for result in results %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ result.accession }}</td>
+          <td>{{ result.protein_name }}</td>
+          <td>{{ result.gene_symbol }}</td>
+          <td>{{ result.organism }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+  <div class="inputgen-content" id="content-upload" style="display: none">
+    <h2 style="color: #1976d2; font-size: 1.1rem; margin-bottom: 18px">
+      Upload Daftar Gen
+    </h2>
+
+    {% if upload_success %}
+    <div class="success-message">✅ {{ upload_success }}</div>
+    {% endif %}
+    {% if upload_error %}
+    <div class="error-message">❌ {{ upload_error }}</div>
+    {% endif %}
+
+    <div class="upload-container">
+      <div class="upload-left">
+        <form class="upload-form" action="{% url 'uniprot_upload' %}" method="POST" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="upload-info">
+            <strong>📋 Format File yang Didukung:</strong><br />
+            • Excel (.xlsx, .xls)<br />
+            • CSV (.csv)<br />
+            • Text (.txt)<br /><br />
+            <strong>📝 Persyaratan Data:</strong><br />
+            • File harus memiliki kolom header<br />
+            • Minimal harus ada kolom: Accession, Gene Symbol, atau Protein Name
+          </div>
+          <div class="file-upload-row">
+            <input type="file" name="gene_file" accept=".csv,.xlsx,.xls,.txt" required />
+            <button type="submit">Upload</button>
+          </div>
+        </form>
+
+        {% if upload_summary %}
+        <div style="margin-top: 10px">
+          <a href="{% url 'preprocessing_use_data' %}?source=upload" style="display: block; padding: 12px 20px; background: #2e7d32; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; text-align: center;">
+            Gunakan data ini
+          </a>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="upload-right">
+        {% if upload_summary and uploaded_data %}
+        <h3 style="color: #1976d2; margin-top: 0">
+          📋 Preview Data (5 baris pertama dari {{ upload_summary.total_rows }} data)
+        </h3>
+        <div style="overflow-x: auto">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                {% for col in upload_summary.columns %}
+                <th>{{ col }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in uploaded_data|slice:":5" %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                {% for col in upload_summary.columns %}
+                <td>{{ row|get_item:col }}</td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div style="display: flex; align-items: center; justify-content: center; height: 300px; background: #f5f9ff; border-radius: 8px; border: 2px dashed #bbdefb;">
+          <p style="color: #1976d2; font-size: 1.1rem; text-align: center;">
+            📊<br />Upload file untuk melihat preview data
+          </p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function showTab(tabName) {
+    document.getElementById("content-uniprot").style.display = "none";
+    document.getElementById("content-upload").style.display = "none";
+    document.getElementById("tab-uniprot").classList.remove("active");
+    document.getElementById("tab-upload").classList.remove("active");
+
+    if (tabName === "uniprot") {
+      document.getElementById("content-uniprot").style.display = "block";
+      document.getElementById("tab-uniprot").classList.add("active");
+      console.log('%c📑 Tab "Berdasarkan Nama Penyakit" dibuka', 'color: #2196F3; font-weight: bold; font-size: 13px;');
+    } else if (tabName === "upload") {
+      document.getElementById("content-upload").style.display = "block";
+      document.getElementById("tab-upload").classList.add("active");
+      console.log('%c📑 Tab "Input Manual Daftar Gen" dibuka', 'color: #2196F3; font-weight: bold; font-size: 13px;');
+    }
+  }
+
+  {% if upload_success or upload_error or upload_summary %}
+  window.addEventListener("DOMContentLoaded", function () {
+    showTab("upload");
+  });
+  {% endif %}
+</script>
+{% endblock %}

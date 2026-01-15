@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}UniProt - GLOD Community Detector{% endblock %}
+
+{% block extra_head %}
+<style>
+        /* Samakan layout dengan preprocessing.html - centered top-middle */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            padding: 40px 20px 20px 20px;
+            background-color: #f5f6fa;
+        }
+        .content {
+            background-color: white;
+            padding: 38px 38px 32px 38px;
+            border-radius: 18px;
+            box-shadow: 0 2px 16px rgba(25,118,210,0.10);
+            max-width: 1080px;
+            width: 100%;
+        }
+        h1 {
+            color: #1976d2;
+            font-size: 2.3rem;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+        }
+        p {
+            color: #444;
+            font-size: 1rem;
+            line-height: 1.7;
+            text-align: center;
+        }
+        a {
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+</style>
+{% endblock %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniProt - Ambil Data UniProt</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <h1>Ambil Data UniProt</h1>
+        <p>Halaman untuk mengambil data protein dari database UniProt.</p>
+        <p><a href="/">← Kembali ke Dashboard</a></p>
+    </div>
+</body>
+</html>
+{% endblock %}

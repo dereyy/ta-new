@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Beranda - GLOD Community Detector{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Samakan layout dengan preprocessing.html - centered top-middle */
+  .main-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    padding: 40px 20px 20px 20px;
+  }
+  .content-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 2px 16px rgba(25,118,210,0.10);
+    padding: 38px 38px 32px 38px;
+    max-width: 1080px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .content-card h1 {
+    font-size: 2.3rem;
+    margin-bottom: 24px;
+    color: #1976d2;
+    text-align: center;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+  }
+  .desc {
+    font-size: 1rem;
+    margin-bottom: 40px;
+    text-align: center;
+    color: #444;
+    font-weight: 400;
+    max-width: 105ch;
+    line-height: 1.7;
+  }
+  .subsection {
+    width: 100%;
+    max-width: 700px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .subsection h3 {
+    font-size: 1.18rem;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #1976d2;
+    font-weight: 600;
+    text-align: center;
+  }
+  .subsection ul {
+    margin: 0 0 0 0;
+    padding: 0 0 0 1.2em;
+    color: #333;
+    text-align: left;
+    width: 100%;
+    font-size: 1.08rem;
+    line-height: 1.7;
+    margin-bottom: 25px;
+  }
+  .subsection li {
+    margin-bottom: 8px;
+  }
+  .start-btn {
+    display: inline-block;
+    background: #1976d2;
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: 600;
+    padding: 15px 38px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(25,118,210,0.08);
+    transition: background 0.2s;
+    margin-top: 5px;
+    margin-bottom: 20px;
+    text-decoration: none;
+  }
+  .start-btn:hover {
+    background: #1565c0;
+  }
+  @media (max-width: 900px) {
+    .content-card {
+      padding: 18px 4px 12px 4px;
+    }
+    .subsection {
+      padding: 0;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-card">
+  <h1>Selamat datang di website deteksi komunitas dengan algoritma GLOD</h1>
+  <div class="desc">
+    Algoritma GLOD adalah metode untuk menemukan komunitas yang tumpang tindih dalam sebuah jaringan dengan cara bekerja secara lokal, dimulai dengan membentuk "benih" (seed) dari sekelompok kecil node yang saling mirip. Setelah benih terbentuk, batasnya diperluas secara iteratif dengan menambahkan node tetangga yang paling sesuai, dan diakhiri dengan menggabungkan komunitas yang memiliki tingkat tumpang tindih sangat tinggi.
+  </div>
+  <div class="subsection">
+    <h3>Cara Kerja Singkat</h3>
+    <ul>
+      <li><b>Seeding</b> – Membentuk inti komunitas dari node-node paling mirip.</li>
+      <li><b>Expansion</b> – Memperluas komunitas dengan menambah anggota paling relevan.</li>
+      <li><b>Merging</b> – Menggabungkan komunitas yang tingkat tumpang tindihnya sangat tinggi.</li>
+    </ul>
+    <a href="/uniprot/input/" class="start-btn">Mulai Deteksi Sekarang</a>
+  </div>
+</div>
+{% endblock %}

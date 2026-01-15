@@ -1,0 +1,42 @@
+{
+  "description": "Contoh Ground Truth untuk GLOD Evaluation - Protein-Protein Interaction Network",
+  "source": "KEGG Database / Literature",
+  "network_size": 50,
+  "num_communities": 8,
+  "note": "Copy isi dari array 'communities' saja ke textarea di form",
+  
+  "communities": [
+    ["TP53", "MDM2", "TP63", "TP73", "RB1"],
+    ["BRCA1", "BRCA2", "RAD51", "RAD54", "MRE11"],
+    ["AKT1", "AKT2", "PTEN", "GSK3B", "FOXO1"],
+    ["MYC", "MAX", "MXD1", "E2F1", "RB1"],
+    ["MAPK1", "MAPK3", "ERK1", "MEK1", "BRAF"],
+    ["EGFR", "HER2", "HER3", "GRB2", "SOS1"],
+    ["JAK1", "STAT3", "IL6", "IL6R", "YWHAE"],
+    ["TP73", "CDKN1A", "BAX", "APAF1", "CASP9"]
+  ],
+
+  "alternative_overlapping_example": [
+    ["PROTEIN_A", "PROTEIN_B", "PROTEIN_C"],
+    ["PROTEIN_C", "PROTEIN_D", "PROTEIN_E"],
+    ["PROTEIN_F", "PROTEIN_G"],
+    ["PROTEIN_H", "PROTEIN_I", "PROTEIN_A"]
+  ],
+
+  "notes": {
+    "format": "Array of arrays - setiap inner array adalah satu komunitas",
+    "overlapping": "Node bisa muncul di multiple komunitas (misal: PROTEIN_A dan PROTEIN_C di contoh kedua)",
+    "unlabeled": "Node yang tidak muncul di komunitas manapun dianggap sebagai komunitas single-node",
+    "exact_match": "Node names HARUS exactly match dengan node di network Anda",
+    "validation": "Format harus valid JSON - gunakan JSON validator jika ragu"
+  },
+
+  "how_to_use": {
+    "step1": "Siapkan ground truth komunitas dari literature atau expert annotation",
+    "step2": "Format sebagai JSON array of arrays seperti contoh di atas",
+    "step3": "Copy seluruh array (bukan file JSON) ke textarea di form GLOD",
+    "step4": "Pastikan node names match dengan network Anda",
+    "step5": "Submit form - NMI metrics akan dihitung otomatis",
+    "example_copy": "[['TP53', 'MDM2', 'TP63'], ['BRCA1', 'BRCA2', 'RAD51']]"
+  }
+}

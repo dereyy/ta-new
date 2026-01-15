@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Analisis GLOD - GLOD Community Detector{% endblock %}
+
+{% block extra_head %}
+<style>
+:root{--primary-blue:#1976d2}
+.btn-primary{background-color:var(--primary-blue)!important;border-color:var(--primary-blue)!important}
+.btn-primary:hover{background-color:#1565c0!important;border-color:#1565c0!important}
+.bg-primary{background-color:var(--primary-blue)!important}
+.card-header.bg-primary{background-color:var(--primary-blue)!important}
+.start-btn{background:var(--primary-blue)!important}
+.page-title {
+  font-size: 2rem;
+  color: #1976d2;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 0.5px;
+  margin-bottom: 25px;
+}
+.section-heading {
+  color: #1976d2;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 13px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-center align-items-center mt-2 mb-5">
+            <h3 class="mb-0 page-title">GLOD - Global Local Overlapping Community Detection</h3>
+          </div>
+
+          {% if error %}
+          <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle"></i> {{ error }}
+          </div>
+          {% else %}
+
+          <div class="card mb-4">
+            <div class="card-body">
+              <h5 class="card-title section-heading">Informasi Jaringan</h5>
+              <p class="mb-1">Total Nodes : {{ total_nodes }}</p>
+              <p class="mb-0">Total Edges  : {{ total_edges }}</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0">Konfigurasi Parameter GLOD</h5>
+            </div>
+            <div class="card-body">
+      <form method="post" action="{% url 'glod_result' %}">
+        {% csrf_token %}
+
+        <div class="mb-4">
+          <label for="alpha" class="form-label">
+            <strong>α (Alpha) - Resolution Parameter</strong>
+          </label>
+          <input
+            type="number"
+            class="form-control"
+            id="alpha"
+            name="alpha"
+            value="{{ default_alpha }}"
+            step="0.01"
+            min="0.1"
+            max="2.0"
+            required
+          />
+          <div class="form-text">
+            <i class="fas fa-info-circle"></i>
+            <strong>Default: 0.8</strong> - Parameter ini mengatur
+            kepadatan/ukuran komunitas.
+            <ul class="mt-2">
+              <li>
+                <strong>α &lt; 1:</strong> Komunitas lebih kecil dan lebih padat
+              </li>
+              <li><strong>α = 1:</strong> Balanced</li>
+              <li>
+                <strong>α &gt; 1:</strong> Komunitas lebih besar dan lebih
+                longgar
+              </li>
+            </ul>
+            Mainkan nilai ini untuk mengatur seberapa ketat komunitas yang
+            dihasilkan.
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="jaccard_threshold" class="form-label">
+            <strong>Threshold Jaccard - Merging Parameter</strong>
+          </label>
+          <input
+            type="number"
+            class="form-control"
+            id="jaccard_threshold"
+            name="jaccard_threshold"
+            value="{{ default_threshold }}"
+            step="0.01"
+            min="0.0"
+            max="1.0"
+            required
+          />
+          <div class="form-text">
+            <i class="fas fa-info-circle"></i>
+            <strong>Default: 0.33 (1/3)</strong> - Parameter ini mengatur
+            seberapa banyak overlap yang Anda toleransi sebelum komunitas
+            di-merge.
+            <ul class="mt-2">
+              <li>
+                <strong>Nilai tinggi (~ 0.5-1.0):</strong> Hanya merge komunitas
+                yang sangat mirip → lebih banyak komunitas terpisah
+              </li>
+              <li>
+                <strong>Nilai rendah (~ 0.1-0.3):</strong> Merge komunitas
+                dengan overlap kecil → lebih sedikit komunitas, lebih besar
+              </li>
+            </ul>
+            Jaccard Coefficient = |C₁ ∩ C₂| / |C₁ ∪ C₂|
+          </div>
+        </div>
+
+        <div class="info" style="background-color: #eaf1ff;">
+          <h6><i class="fas fa-lightbulb"></i> Tips Penggunaan:</h6>
+          <ul class="mb-0">
+            <li>
+              Untuk jaringan protein yang sangat terkoneksi, coba
+              <strong>α = 0.7-0.9</strong>
+            </li>
+            <li>
+              Untuk mengurangi overlap komunitas, tingkatkan
+              <strong>Threshold Jaccard ke 0.4-0.5</strong>
+            </li>
+            <li>
+              Untuk komunitas yang lebih granular, turunkan
+              <strong>α ke 0.5-0.7</strong> dan threshold ke
+              <strong>0.2-0.3</strong>
+            </li>
+          </ul>
+        </div>
+
+        <div class="d-grid gap-2" style="margin-top: 20px;">
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fas fa-play-circle"></i> Jalankan Algoritma GLOD
+          </button>
+        </div>
+      </form>
+            </div>
+          </div>
+
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
