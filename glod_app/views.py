@@ -130,7 +130,8 @@ class GLODAlgorithm:
                 (neighbor, self.common_neighbor_similarity(center_node, neighbor)) 
                 for neighbor in available_neighbors
             ]
-            nc_scores.sort(key=lambda x: x[1], reverse=True)
+            # Sort by NC (descending), then by node ID (ascending) untuk tie-breaking konsisten
+            nc_scores.sort(key=lambda x: (-x[1], x[0]))
             
             best_neighbor, best_nc = nc_scores[0]
             
@@ -282,8 +283,9 @@ class GLODAlgorithm:
                 break
             
             # Hitung semua nilai untuk semua candidates (Algorithm 2)
+            # Sort shell_nodes untuk konsistensi iterasi
             candidate_scores = {}
-            for candidate in shell_nodes:
+            for candidate in sorted(shell_nodes):
                 test_community = community.copy()
                 test_community.add(candidate)
                 
@@ -309,11 +311,13 @@ class GLODAlgorithm:
             best_by_influence = max(candidate_scores.items(), key=lambda x: x[1]['influence'])
             
             # Langkah 2: Kumpulkan semua node yang merupakan argmax dari setidaknya satu fungsi
-            argmax_nodes = {
+            # Gunakan set kemudian convert ke sorted list untuk konsistensi
+            argmax_nodes_set = {
                 best_by_fitness[0],
                 best_by_omega[0],
                 best_by_influence[0]
             }
+            argmax_nodes = sorted(argmax_nodes_set)  # Sort untuk konsistensi iterasi
             
             # Langkah 3: Pilih node terbaik di antara argmax nodes dengan kriteria ketat
             best_candidate = None
@@ -327,7 +331,11 @@ class GLODAlgorithm:
                 # Untuk memilih node terbaik di antara argmax nodes, gunakan kombinasi score
                 max_score_for_candidate = max(scores['fitness'], scores['omega'], scores['influence'])
                 
-                if max_score_for_candidate > best_score:
+                # Tie-breaking: jika score sama, pilih node ID terkecil
+                if max_score_for_candidate > best_score or (
+                    max_score_for_candidate == best_score and 
+                    (best_candidate is None or candidate < best_candidate)
+                ):
                     best_score = max_score_for_candidate
                     best_candidate = candidate
                     best_fitness_gain = scores['fitness']
@@ -846,13 +854,14 @@ class GLODAlgorithm:
         
         return total_h_x_given_y
     
-    def calculate_onmi_metrics(self, detected_comms: List[Set], ground_truth_comms: List[Set]) -> Dict[str, float]:
+    def calculate_onmi_metrics(self, detected_comms: List[Set], ground_truth_comms: List[Set], seed_value: int = 42) -> Dict[str, float]:
         """
         Menghitung tiga metrik NMI untuk evaluasi overlapping community detection.
         
         Parameters:
         - detected_comms: List dari Set, hasil deteksi komunitas dari algoritma
         - ground_truth_comms: List dari Set, label ground truth komunitas yang sebenarnya
+        - seed_value: Random seed untuk konsistensi perhitungan rNMI (default: 42)
         
         Returns:
         Dictionary dengan keys: 'nmi_lfk', 'nmi_max', 'rnmi'
@@ -919,8 +928,9 @@ class GLODAlgorithm:
         # Buat beberapa ground truth acak dan hitung rata-rata NMI-nya
         
         import random
+        random.seed(seed_value)  # Set seed untuk konsistensi hasil
         random_nmis = []
-        nodes_list = list(self.graph.nodes())
+        nodes_list = sorted(list(self.graph.nodes()))  # Sort untuk konsistensi
         
         # Generate 10 partisi acak dengan distribusi ukuran yang sama
         for _ in range(10):
@@ -970,7 +980,7 @@ class GLODAlgorithm:
             'rnmi': rnmi                        # Bisa negatif
         }
     
-    def run(self) -> Tuple[List[Set], float, float, float]:
+    def run(self, seed_value: int = 42) -> Tuple[List[Set], float, float, float]:
         """
         Jalankan algoritma GLOD lengkap sesuai dengan paper.
         
@@ -981,14 +991,22 @@ class GLODAlgorithm:
         2. Expansion Phase (Algorithm 2): Ekspansi seed dengan OR logic (fitness, omega, influence)
         3. Merge Phase (Algorithm 3): Merge komunitas overlapping dengan improved Jaccard >= 1/3
         
+        Args:
+            seed_value: Random seed untuk reproducible results (default: 42)
+        
         Returns: (list of communities, shen_modularity, lazar_modularity, nicosia_modularity)
         
         PERBAIKAN KRITIS: 
         - Implementasi NL yang benar: Node yang sudah masuk komunitas DIHAPUS dari NL
         - Ini mencegah redundansi tinggi dan mempercepat eksekusi drastis
         - Overlapping TETAP BISA terjadi namun dengan seed yang berbeda-beda
+        - SET RANDOM SEED untuk reproducibility: hasil akan konsisten dengan parameter yang sama
         """
+        import random
+        random.seed(seed_value)
+        
         print(f"Starting GLOD with {self.graph.number_of_nodes()} nodes and {self.graph.number_of_edges()} edges")
+        print(f"Random seed set to {seed_value} for reproducible results")
         
         # Phase 1: Seeding (Algorithm 1)
         # NL = koleksi node yang belum memiliki label komunitas (dapat diproses sebagai seed)
@@ -1008,7 +1026,11 @@ class GLODAlgorithm:
             
             # Pilih node dengan derajat tertinggi dari NL sebagai center (Algorithm 1, line 3)
             # Sorting by centrality ensures good seed selection
-            best_center = max(NL, key=lambda node: self.graph.degree(node))
+            # PENTING: Gunakan sorting dengan tie-breaking konsisten menggunakan node ID
+            best_center = min(
+                NL, 
+                key=lambda node: (-self.graph.degree(node), node)  # Negative degree untuk max, node ID untuk tie-break
+            )
             
             print(f"\nIteration {iteration}: Processing center node {best_center} (degree: {self.graph.degree(best_center)}, NL size: {len(NL)})")
             
@@ -1199,7 +1221,7 @@ def glod_result(request):
         glod = GLODAlgorithm(G, alpha=alpha, jaccard_threshold=jaccard_threshold)
         print(f"GLODAlgorithm initialized with alpha={glod.alpha}, jaccard_threshold={glod.jaccard_threshold}")
         
-        communities, shen_mod, lazar_mod, nicosia_mod = glod.run()
+        communities, shen_mod, lazar_mod, nicosia_mod = glod.run(seed_value=42)  # Use fixed seed untuk hasil konsisten
         
         # ===== HITUNG NORMALIZED NODE CUT DAN CONDUCTANCE =====
         psi_scores = [glod.calculate_psi_normalized_node_cut(c) for c in communities]
@@ -1257,8 +1279,8 @@ def glod_result(request):
                 ground_truth_comms = [set(comm) for comm in ground_truth_data if comm]
                 
                 if ground_truth_comms and len(ground_truth_comms) > 0:
-                    # Hitung NMI metrics
-                    nmi_results = glod.calculate_onmi_metrics(communities, ground_truth_comms)
+                    # Hitung NMI metrics dengan seed konsisten
+                    nmi_results = glod.calculate_onmi_metrics(communities, ground_truth_comms, seed_value=42)
                     nmi_metrics['nmi_lfk'] = round(nmi_results['nmi_lfk'], 4)
                     nmi_metrics['nmi_max'] = round(nmi_results['nmi_max'], 4)
                     nmi_metrics['rnmi'] = round(nmi_results['rnmi'], 4)
