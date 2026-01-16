@@ -259,27 +259,59 @@
   const communities = {{ communities|safe }};
   const colorPalette = {{ color_palette|safe }};
 
-  // Buat DataSet untuk vis.js
-  const nodes = new vis.DataSet(visNodes.map(node => ({
-    id: node.id,
-    label: node.label,
-    title: node.title,
-    color: {
-      background: node.color,
-      border: '#2B7CE9',
-      highlight: {
-        background: node.color,
-        border: '#000000'
-      }
-    },
-    font: {
-      size: 12,
-      color: '#000'
-    },
-    communities: node.communities
-  })));
+  // Filter nodes: hanya tampilkan node yang ada di komunitas (communities.length > 0)
+  const nodesInCommunities = visNodes.filter(node => node.communities.length > 0);
+  const communityNodeIds = new Set(nodesInCommunities.map(node => node.id));
 
-  const edges = new vis.DataSet(visEdges.map(edge => ({
+  // Buat DataSet untuk vis.js
+  const nodes = new vis.DataSet(nodesInCommunities.map(node => {
+    // Deteksi apakah node adalah overlap (ada di lebih dari 1 komunitas)
+    const isOverlapping = node.communities.length > 1;
+    
+    if (isOverlapping) {
+      // Node overlap: outline saja dengan border hitam tebal
+      return {
+        id: node.id,
+        label: node.label,
+        title: node.title,
+        color: {
+          background: 'rgba(255, 255, 255, 0)',  // Transparent background
+          border: '#2B7CE9',                      // Black border
+        },
+        borderWidth: 4,
+        font: {
+          size: 12,
+          color: '#000'
+        },
+        communities: node.communities
+      };
+    } else {
+      // Node biasa: fill penuh dengan warna komunitas
+      return {
+        id: node.id,
+        label: node.label,
+        title: node.title,
+        color: {
+          background: node.color,
+          border: '#2B7CE9',
+          highlight: {
+            background: node.color,
+            border: '#000000'
+          }
+        },
+        font: {
+          size: 12,
+          color: '#000'
+        },
+        communities: node.communities
+      };
+    }
+  }));
+
+  // Filter edges: hanya tampilkan edge yang kedua ujungnya ada di komunitas
+  const edges = new vis.DataSet(visEdges.filter(edge => 
+    communityNodeIds.has(edge.from) && communityNodeIds.has(edge.to)
+  ).map(edge => ({
     from: edge.from,
     to: edge.to,
     color: {
@@ -504,24 +536,49 @@
     );
 
     // Buat DataSet untuk komunitas ini
-    const commNodes = new vis.DataSet(communityNodes.map(node => ({
-      id: node.id,
-      label: node.label,
-      title: node.label,
-      color: {
-        background: node.color,
-        border: '#2B7CE9',
-        highlight: {
-          background: node.color,
-          border: '#000000'
-        }
-      },
-      font: {
-        size: 14,
-        color: '#000',
-        bold: { color: '#000' }
+    const commNodes = new vis.DataSet(communityNodes.map(node => {
+      // Deteksi apakah node adalah overlap (ada di lebih dari 1 komunitas)
+      const isOverlapping = node.communities.length > 1;
+      
+      if (isOverlapping) {
+        // Node overlap: outline saja dengan border hitam tebal
+        return {
+          id: node.id,
+          label: node.label,
+          title: node.label,
+          color: {
+            background: 'rgba(255, 255, 255, 0)',  // Transparent background
+            border: '#2B7CE9',                      // Black border
+          },
+          borderWidth: 4,
+          font: {
+            size: 14,
+            color: '#000',
+            bold: { color: '#000' }
+          }
+        };
+      } else {
+        // Node biasa: fill penuh dengan warna komunitas
+        return {
+          id: node.id,
+          label: node.label,
+          title: node.label,
+          color: {
+            background: node.color,
+            border: '#2B7CE9',
+            highlight: {
+              background: node.color,
+              border: '#000000'
+            }
+          },
+          font: {
+            size: 14,
+            color: '#000',
+            bold: { color: '#000' }
+          }
+        };
       }
-    })));
+    }));
 
     const commEdges = new vis.DataSet(communityEdges.map(edge => ({
       from: edge.from,
