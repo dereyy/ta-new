@@ -551,12 +551,16 @@
       // Deteksi apakah node adalah overlap (ada di lebih dari 1 komunitas)
       const isOverlapping = node.communities.length > 1;
       
+      // Buat title yang menunjukkan komunitas-komunitas yang node masuki
+      const communitiesList = node.communities.join(', ');
+      const nodeTitle = `${node.label}\nCommunities: ${communitiesList}`;
+      
       if (isOverlapping) {
         // Node overlap: outline saja dengan border hitam tebal
         return {
           id: node.id,
           label: node.label,
-          title: node.label,
+          title: nodeTitle,
           color: {
             background: 'rgba(255, 255, 255, 0)',  // Transparent background
             border: '#2B7CE9',                      // Black border
@@ -573,7 +577,7 @@
         return {
           id: node.id,
           label: node.label,
-          title: node.label,
+          title: nodeTitle,
           color: {
             background: node.color,
             border: '#2B7CE9',
