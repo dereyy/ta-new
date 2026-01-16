@@ -153,7 +153,7 @@
             {% for community in communities %}
             <tr id="community-row-{{ community.id }}">
               <td>
-                <span class="badge" style="background-color: {{ color_palette|slice:forloop.counter0|slice:1 }}; color: white; font-size: 14px; padding: 6px 10px;">
+                <span class="badge" style="background-color: #000000; color: white; font-size: 14px; padding: 6px 10px;">
                   Komunitas {{ community.id }}
                 </span>
               </td>
@@ -596,14 +596,13 @@
         enabled: true,
         stabilization: {
           iterations: 200,
-          updateInterval: 50,
-          fit: true
+          updateInterval: 50
         },
         barnesHut: {
-          gravitationalConstant: -2000,
+          gravitationalConstant: -3000,
           centralGravity: 0.3,
-          springLength: 100,
-          springConstant: 0.05,
+          springLength: 150,
+          springConstant: 0.04,
           damping: 0.95,
           avoidOverlap: 0.5
         }
@@ -636,6 +635,12 @@
     // Render network
     const data = { nodes: commNodes, edges: commEdges };
     communityNetworks[communityId] = new vis.Network(container, data, options);
+    
+    // Stabilization callback: disable physics setelah stabil
+    communityNetworks[communityId].on("stabilizationIterationsDone", function() {
+      communityNetworks[communityId].setOptions({ physics: { enabled: false } });
+      communityNetworks[communityId].fit();
+    });
   }
 </script>
 {% endif %} 
