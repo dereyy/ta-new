@@ -1404,20 +1404,6 @@ def generate_xlsx(communities):
     ws = wb.active
     ws.title = 'Hasil Komunitas'
     
-    # Define styles
-    header_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
-    header_font = Font(bold=True, color='FFFFFF', size=12)
-    header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-    
-    border = Border(
-        left=Side(style='thin'),
-        right=Side(style='thin'),
-        top=Side(style='thin'),
-        bottom=Side(style='thin')
-    )
-    
-    center_alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)
-    
     # Header
     headers = [
         'Komunitas ID',
@@ -1428,24 +1414,10 @@ def generate_xlsx(communities):
         'Normalized Node Cut (Ψ)'
     ]
     
-    for col_num, header in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col_num)
-        cell.value = header
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.alignment = header_alignment
-        cell.border = border
-    
-    # Set column widths
-    ws.column_dimensions['A'].width = 15
-    ws.column_dimensions['B'].width = 15
-    ws.column_dimensions['C'].width = 15
-    ws.column_dimensions['D'].width = 40
-    ws.column_dimensions['E'].width = 40
-    ws.column_dimensions['F'].width = 18
+    ws.append(headers)
     
     # Data
-    for row_num, community in enumerate(communities, 2):
+    for community in communities:
         members_str = ', '.join(community.get('members', []))
         overlap_members_str = ', '.join(community.get('overlap_members', []))
         
@@ -1458,14 +1430,7 @@ def generate_xlsx(communities):
             community.get('psi', '')
         ]
         
-        for col_num, value in enumerate(data, 1):
-            cell = ws.cell(row=row_num, column=col_num)
-            cell.value = value
-            cell.border = border
-            cell.alignment = center_alignment
-    
-    # Freeze header row
-    ws.freeze_panes = 'A2'
+        ws.append(data)
     
     # Create response
     response = HttpResponse(
