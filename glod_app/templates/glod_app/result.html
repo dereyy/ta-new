@@ -630,14 +630,16 @@
         shape: 'custom',
         size: nodeSize,
         communities: node.communities,
-        ctxRenderer: function({ctx, x, y, state, style}) {
-          renderNode(ctx, x, y, {
+        ctxRenderer: function(params) {
+          const {ctx, x, y, state, style} = params;
+          
+          const result = renderNode(ctx, x, y, {
             size: style.size,
             label: node.label,
             communities: node.communities
           });
           
-          // Highlight jika dipilih
+          // Highlight jika dipilih atau hover
           if (state.selected || state.hover) {
             ctx.strokeStyle = state.selected ? '#FF0000' : '#666666';
             ctx.lineWidth = 2;
@@ -645,6 +647,8 @@
             ctx.arc(x, y, style.size + 3, 0, 2 * Math.PI);
             ctx.stroke();
           }
+          
+          return result;
         },
         font: {
           size: 10,
@@ -713,10 +717,18 @@
     const data = { nodes: commNodes, edges: commEdges };
     communityNetworks[communityId] = new vis.Network(container, data, options);
     
+    console.log(`Community ${communityId}: ${commNodes.length} nodes, ${commEdges.length} edges`);
+    
     // Stabilization callback: disable physics setelah stabil
     communityNetworks[communityId].on("stabilizationIterationsDone", function() {
+      console.log(`Community ${communityId} stabilization done`);
       communityNetworks[communityId].setOptions({ physics: { enabled: false } });
       communityNetworks[communityId].fit();
+    });
+    
+    // Debug render
+    communityNetworks[communityId].on("afterDrawing", function() {
+      console.log(`Community ${communityId} drawn, visible nodes:`, communityNetworks[communityId].getVisibleNodes().length);
     });
   }
 </script>
