@@ -255,50 +255,104 @@
   const nodesInCommunities = visNodes.filter(node => node.communities.length > 0);
   const communityNodeIds = new Set(nodesInCommunities.map(node => node.id));
 
+  // Buat mapping warna komunitas dengan logika yang sama seperti legend
+  const communityColors = {};
+  communities.forEach((comm, idx) => {
+    let color;
+    if (idx < colorPalette.length) {
+      color = colorPalette[idx];
+    } else {
+      // Generate warna dinamis menggunakan HSL untuk komunitas tambahan
+      const hue = (idx * 360 / Math.max(colorPalette.length, communities.length)) % 360;
+      color = `hsl(${hue}, 70%, 50%)`;
+    }
+    communityColors[comm.id] = color;
+  });
+
+  // Custom renderer untuk node dengan multiple rings
+  function renderNode(ctx, x, y, nodeData) {
+    const { size, label, communities } = nodeData;
+    const numCommunities = communities.length;
+    const ringWidth = 4;
+    
+    try {
+      // Gambar background putih
+      ctx.save();
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Gambar rings untuk setiap komunitas (dari luar ke dalam)
+      for (let i = 0; i < numCommunities; i++) {
+        const commId = communities[i];
+        const color = communityColors[commId] || colorPalette[commId % colorPalette.length];
+        const radius = size - (i * ringWidth);
+        
+        if (radius > 5) {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = ringWidth;
+          ctx.beginPath();
+          ctx.arc(x, y, radius - ringWidth / 2, 0, 2 * Math.PI);
+          ctx.stroke();
+        }
+      }
+      
+      // Gambar label di tengah
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 9px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, x, y);
+      ctx.restore();
+      
+      return true; // Return true untuk mengindikasikan rendering berhasil
+    } catch (error) {
+      console.error('Error rendering node:', label, error);
+      return false;
+    }
+  }
+
   // Buat DataSet untuk vis.js
   const nodes = new vis.DataSet(nodesInCommunities.map(node => {
-    // Deteksi apakah node adalah overlap (ada di lebih dari 1 komunitas)
-    const isOverlapping = node.communities.length > 1;
+    const numCommunities = node.communities.length;
+    const nodeSize = 20 + (numCommunities * 4); // Ukuran bertambah per komunitas
     
-    if (isOverlapping) {
-      // Node overlap: outline saja dengan border hitam tebal
-      return {
-        id: node.id,
-        label: node.label,
-        title: node.title,
-        color: {
-          background: 'rgba(255, 255, 255, 0)',  // Transparent background
-          border: '#2B7CE9',                      // Black border
-        },
-        borderWidth: 4,
-        font: {
-          size: 12,
-          color: '#000'
-        },
-        communities: node.communities
-      };
-    } else {
-      // Node biasa: fill penuh dengan warna komunitas
-      return {
-        id: node.id,
-        label: node.label,
-        title: node.title,
-        color: {
-          background: node.color,
-          border: '#2B7CE9',
-          highlight: {
-            background: node.color,
-            border: '#000000'
-          }
-        },
-        font: {
-          size: 12,
-          color: '#000'
-        },
-        communities: node.communities
-      };
-    }
+    return {
+      id: node.id,
+      label: node.label,
+      title: node.title,
+      shape: 'custom',
+      size: nodeSize,
+      communities: node.communities,
+      ctxRenderer: function(params) {
+        const {ctx, x, y, state, style} = params;
+        
+        const result = renderNode(ctx, x, y, {
+          size: style.size,
+          label: node.label,
+          communities: node.communities
+        });
+        
+        // Highlight jika dipilih atau hover
+        if (state.selected || state.hover) {
+          ctx.strokeStyle = state.selected ? '#FF0000' : '#666666';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(x, y, style.size + 3, 0, 2 * Math.PI);
+          ctx.stroke();
+        }
+        
+        return result;
+      },
+      font: {
+        size: 9,
+        color: '#000'
+      }
+    };
   }));
+
+  console.log('Nodes created:', nodes.length, 'from', nodesInCommunities.length, 'nodes in communities');
 
   // Filter edges: hanya tampilkan edge yang kedua ujungnya ada di komunitas
   const edges = new vis.DataSet(visEdges.filter(edge => 
@@ -313,21 +367,21 @@
     width: 2
   })));
 
-  // Konfigurasi network
+  // Konfigurasi network dengan spacing yang baik
   const options = {
     physics: {
       enabled: true,
       stabilization: {
-        iterations: 200,
+        iterations: 300,
         updateInterval: 50
       },
       barnesHut: {
-        gravitationalConstant: -3000,
-        centralGravity: 0.3,
-        springLength: 150,
-        springConstant: 0.04,
-        damping: 0.95,
-        avoidOverlap: 0.5
+        gravitationalConstant: -5000,
+        centralGravity: 0.05,
+        springLength: 300,
+        springConstant: 0.015,
+        damping: 0.9,
+        avoidOverlap: 1
       }
     },
     nodes: {
@@ -335,12 +389,18 @@
       size: 20,
       borderWidth: 2,
       font: {
-        size: 12,
-        face: 'Arial'
+        size: 10,
+        face: 'Arial',
+        align: 'center',
+        vadjust: 0
       }
     },
     edges: {
-      width: 2,
+      width: 1,
+      color: {
+        color: '#cccccc',
+        opacity: 0.3
+      },
       smooth: {
         type: 'continuous'
       }
@@ -356,10 +416,19 @@
   const container = document.getElementById('network-container');
   const network = new vis.Network(container, { nodes: nodes, edges: edges }, options);
 
+  console.log('Total nodes in dataset:', nodes.length);
+  console.log('Total edges in dataset:', edges.length);
+
   // Stabilization callback
   network.on("stabilizationIterationsDone", function() {
+    console.log('Stabilization done');
     network.setOptions({ physics: { enabled: false } });
     network.fit();
+  });
+
+  // Debug: cek apakah semua nodes di-render
+  network.on("afterDrawing", function() {
+    console.log('Network drawn, visible nodes:', network.getVisibleNodes().length);
   });
 
   // Download visualization
@@ -548,51 +617,40 @@
 
     // Buat DataSet untuk komunitas ini
     const commNodes = new vis.DataSet(communityNodes.map(node => {
-      // Deteksi apakah node adalah overlap (ada di lebih dari 1 komunitas)
-      const isOverlapping = node.communities.length > 1;
+      const numCommunities = node.communities.length;
+      const nodeSize = 25 + (numCommunities * 4);
       
-      // Buat title yang menunjukkan komunitas-komunitas yang node masuki
       const communitiesList = node.communities.join(', ');
       const nodeTitle = `${node.label}\nCommunities: ${communitiesList}`;
       
-      if (isOverlapping) {
-        // Node overlap: outline saja dengan border hitam tebal
-        return {
-          id: node.id,
-          label: node.label,
-          title: nodeTitle,
-          color: {
-            background: 'rgba(255, 255, 255, 0)',  // Transparent background
-            border: '#2B7CE9',                      // Black border
-          },
-          borderWidth: 4,
-          font: {
-            size: 14,
-            color: '#000',
-            bold: { color: '#000' }
+      return {
+        id: node.id,
+        label: node.label,
+        title: nodeTitle,
+        shape: 'custom',
+        size: nodeSize,
+        communities: node.communities,
+        ctxRenderer: function({ctx, x, y, state, style}) {
+          renderNode(ctx, x, y, {
+            size: style.size,
+            label: node.label,
+            communities: node.communities
+          });
+          
+          // Highlight jika dipilih
+          if (state.selected || state.hover) {
+            ctx.strokeStyle = state.selected ? '#FF0000' : '#666666';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, y, style.size + 3, 0, 2 * Math.PI);
+            ctx.stroke();
           }
-        };
-      } else {
-        // Node biasa: fill penuh dengan warna komunitas
-        return {
-          id: node.id,
-          label: node.label,
-          title: nodeTitle,
-          color: {
-            background: node.color,
-            border: '#2B7CE9',
-            highlight: {
-              background: node.color,
-              border: '#000000'
-            }
-          },
-          font: {
-            size: 14,
-            color: '#000',
-            bold: { color: '#000' }
-          }
-        };
-      }
+        },
+        font: {
+          size: 10,
+          color: '#000'
+        }
+      };
     }));
 
     const commEdges = new vis.DataSet(communityEdges.map(edge => ({
@@ -610,16 +668,16 @@
       physics: {
         enabled: true,
         stabilization: {
-          iterations: 200,
+          iterations: 300,
           updateInterval: 50
         },
         barnesHut: {
-          gravitationalConstant: -3000,
-          centralGravity: 0.3,
-          springLength: 150,
-          springConstant: 0.04,
-          damping: 0.95,
-          avoidOverlap: 0.5
+          gravitationalConstant: -5000,
+          centralGravity: 0.05,
+          springLength: 300,
+          springConstant: 0.015,
+          damping: 0.9,
+          avoidOverlap: 1
         }
       },
       nodes: {
@@ -627,16 +685,20 @@
         size: 25,
         borderWidth: 2,
         font: {
-          size: 14,
-          face: 'Arial'
+          size: 12,
+          face: 'Arial',
+          align: 'center',
+          vadjust: 0
         }
       },
       edges: {
-        width: 2,
+        width: 1.5,
+        color: {
+          color: '#999999',
+          opacity: 0.3
+        },
         smooth: {
-          type: 'continuous',
-          forceDirection: 'none',
-          roundness: 0.5
+          type: 'continuous'
         }
       },
       interaction: {
