@@ -251,8 +251,48 @@
   const communities = {{ communities|safe }};
   const colorPalette = {{ color_palette|safe }};
 
+  function showNetworkFatalError(err) {
+    const container = document.getElementById('network-container');
+    if (!container) return;
+    const message = (err && (err.stack || err.message)) ? (err.stack || err.message) : String(err);
+    container.innerHTML = `
+      <div style="padding:12px; color:#b00020; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; white-space: pre-wrap;">
+        <strong>Network error</strong>\n${message}
+      </div>`;
+  }
+
+  window.addEventListener('error', (e) => {
+    showNetworkFatalError(e.error || e.message);
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    showNetworkFatalError(e.reason);
+  });
+
+  function normalizeCommunities(value) {
+    if (Array.isArray(value)) return value;
+    if (value === null || value === undefined) return [];
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) return [];
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (_) {
+        // ignore
+      }
+      return trimmed.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    return [value];
+  }
+
   // Filter nodes: hanya tampilkan node yang ada di komunitas (communities.length > 0)
-  const nodesInCommunities = visNodes.filter(node => node.communities.length > 0);
+  const nodesInCommunities = visNodes
+    .map(n => ({ ...n, communities: normalizeCommunities(n.communities) }))
+    .filter(node => node.communities.length > 0);
+
+  if (nodesInCommunities.length === 0) {
+    showNetworkFatalError('Tidak ada node dengan komunitas (vis_nodes[*].communities kosong / format tidak sesuai).');
+  }
   const communityNodeIds = new Set(nodesInCommunities.map(node => node.id));
 
   // Buat mapping warna komunitas dengan logika yang sama seperti legend
@@ -313,11 +353,59 @@
     }
   }
 
-  // Buat DataSet untuk vis.js
-  const nodes = new vis.DataSet(nodesInCommunities.map(node => {
+  // Hitung ukuran setiap komunitas
+  // NOTE: pakai nama berbeda agar tidak bentrok dengan variabel chart di bawah.
+  const communitySizeById = {};
+  nodesInCommunities.forEach(node => {
+    node.communities.forEach(commId => {
+      communitySizeById[commId] = (communitySizeById[commId] || 0) + 1;
+    });
+  });
+
+  console.log('Community sizes:', communitySizeById);
+
+  // --- Community anchors ---
+  // Supaya komunitas tidak bercampur, kita buat "anchor" (node tak terlihat) untuk tiap komunitas
+  // dengan posisi tetap. Semua node di komunitas itu dihubungkan ke anchornya via edge physics.
+  const nodeCommunitiesById = new Map(nodesInCommunities.map(n => [n.id, n.communities]));
+  const communityIdList = Object.keys(communitySizeById)
+    .map(id => (typeof id === 'string' && /^\d+$/.test(id)) ? Number(id) : id)
+    .sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
+  const commSizes = communityIdList.map(id => communitySizeById[id] || 0);
+  const maxCommSize = Math.max(...commSizes, 1);
+  const minCommSize = Math.min(...commSizes, 0);
+
+  function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
+  function anchorRadiusForSize(size) {
+    // Komunitas kecil -> radius lebih besar (pinggir)
+    const denom = (maxCommSize - minCommSize) || 1;
+    const t = clamp((maxCommSize - size) / denom, 0, 1);
+    return 1200 + (t * 2200); // 1200..3400 (lebih jauh supaya tidak bercampur)
+  }
+
+  const anchorNodes = communityIdList.map((commId, i) => {
+    const angle = (i * 2 * Math.PI) / Math.max(communityIdList.length, 1);
+    const radius = anchorRadiusForSize(communitySizeById[commId] || 0);
+    return {
+      id: `anchor_${commId}`,
+      label: '',
+      shape: 'dot',
+      size: 1,
+      hidden: true,
+      physics: false,
+      fixed: { x: true, y: true },
+      x: Math.cos(angle) * radius,
+      y: Math.sin(angle) * radius
+    };
+  });
+
+  // Buat DataSet untuk vis.js (node asli)
+  const nodeItems = nodesInCommunities.map((node) => {
     const numCommunities = node.communities.length;
-    const nodeSize = 20 + (numCommunities * 4); // Ukuran bertambah per komunitas
-    
+    const nodeSize = 20 + (numCommunities * 4);
+    const primaryCommunity = node.communities[0];
+    const isOverlap = numCommunities > 1;
+
     return {
       id: node.id,
       label: node.label,
@@ -325,16 +413,17 @@
       shape: 'custom',
       size: nodeSize,
       communities: node.communities,
+      group: primaryCommunity,
+      mass: isOverlap ? 6 : 1,
       ctxRenderer: function(params) {
         const {ctx, x, y, state, style} = params;
-        
+
         const result = renderNode(ctx, x, y, {
           size: style.size,
           label: node.label,
           communities: node.communities
         });
-        
-        // Highlight jika dipilih atau hover
+
         if (state.selected || state.hover) {
           ctx.strokeStyle = state.selected ? '#FF0000' : '#666666';
           ctx.lineWidth = 2;
@@ -342,7 +431,7 @@
           ctx.arc(x, y, style.size + 3, 0, 2 * Math.PI);
           ctx.stroke();
         }
-        
+
         return result;
       },
       font: {
@@ -350,37 +439,98 @@
         color: '#000'
       }
     };
-  }));
+  });
+
+  const nodes = new vis.DataSet([...anchorNodes, ...nodeItems]);
 
   console.log('Nodes created:', nodes.length, 'from', nodesInCommunities.length, 'nodes in communities');
 
-  // Filter edges: hanya tampilkan edge yang kedua ujungnya ada di komunitas
-  const edges = new vis.DataSet(visEdges.filter(edge => 
-    communityNodeIds.has(edge.from) && communityNodeIds.has(edge.to)
-  ).map(edge => ({
-    from: edge.from,
-    to: edge.to,
-    color: {
-      color: '#cccccc',
-      highlight: '#000000'
-    },
-    width: 2
-  })));
+  function sharesCommunity(a, b) {
+    if (!a || !b) return false;
+    // cek intersection sederhana
+    for (let i = 0; i < a.length; i++) {
+      if (b.includes(a[i])) return true;
+    }
+    return false;
+  }
 
-  // Konfigurasi network dengan spacing yang baik
+  // Filter edges: hanya tampilkan edge yang kedua ujungnya ada di komunitas
+  const graphEdgeItems = visEdges.filter(edge =>
+    communityNodeIds.has(edge.from) && communityNodeIds.has(edge.to)
+  ).map(edge => {
+    const fromComms = nodeCommunitiesById.get(edge.from);
+    const toComms = nodeCommunitiesById.get(edge.to);
+    const sameCommunity = sharesCommunity(fromComms, toComms);
+
+    return {
+      from: edge.from,
+      to: edge.to,
+      color: {
+        color: sameCommunity ? '#999999' : '#eeeeee',
+        highlight: '#000000',
+        opacity: sameCommunity ? 0.55 : 0.03
+      },
+      width: sameCommunity ? 2 : 0.2,
+      length: sameCommunity ? 80 : 900,
+      // Edge asli hanya untuk visual, physics dikendalikan oleh anchor edges
+      physics: false
+    };
+  });
+
+  // Edge anchor (tak terlihat) untuk memaksa node tetap di area komunitasnya
+  const anchorEdgeItems = [];
+  nodesInCommunities.forEach(node => {
+    const comms = node.communities;
+    const isOverlap = comms.length > 1;
+
+    // Non-overlap node: kunci kuat ke anchor utama
+    if (!isOverlap) {
+      const commId = comms[0];
+      anchorEdgeItems.push({
+        from: `anchor_${commId}`,
+        to: node.id,
+        length: 35,
+        width: 0.1,
+        color: { color: 'rgba(0,0,0,0)', opacity: 0 },
+        smooth: false,
+        physics: true
+      });
+      return;
+    }
+
+    // Overlap node: hubungkan ke semua anchor tapi lebih longgar
+    // supaya node overlap berada di antara komunitas tanpa menarik komunitas menjadi bercampur.
+    for (let i = 0; i < comms.length; i++) {
+      const commId = comms[i];
+      anchorEdgeItems.push({
+        from: `anchor_${commId}`,
+        to: node.id,
+        length: 260,
+        width: 0.1,
+        color: { color: 'rgba(0,0,0,0)', opacity: 0 },
+        smooth: false,
+        physics: true
+      });
+    }
+  });
+
+  const edges = new vis.DataSet([...graphEdgeItems, ...anchorEdgeItems]);
+
+  // Konfigurasi network: komunitas dipisah oleh anchor + physics moderat
   const options = {
     physics: {
       enabled: true,
       stabilization: {
-        iterations: 300,
-        updateInterval: 50
+        iterations: 900,
+        updateInterval: 25,
+        fit: true
       },
       barnesHut: {
-        gravitationalConstant: -5000,
-        centralGravity: 0.05,
-        springLength: 300,
-        springConstant: 0.015,
-        damping: 0.9,
+        gravitationalConstant: -12000,
+        centralGravity: 0.02,
+        springLength: 110,
+        springConstant: 0.08,
+        damping: 0.4,
         avoidOverlap: 1
       }
     },
@@ -402,14 +552,22 @@
         opacity: 0.3
       },
       smooth: {
-        type: 'continuous'
+        type: 'continuous',
+        forceDirection: 'none'
       }
+    },
+    groups: {
+      useDefaultGroups: false
     },
     interaction: {
       hover: true,
       tooltipDelay: 100,
       zoomView: true,
       dragView: true
+    },
+    layout: {
+      improvedLayout: true,
+      clusterThreshold: 150
     }
   };
 
@@ -428,7 +586,15 @@
 
   // Debug: cek apakah semua nodes di-render
   network.on("afterDrawing", function() {
-    console.log('Network drawn, visible nodes:', network.getVisibleNodes().length);
+    try {
+      if (typeof network.getVisibleNodes === 'function') {
+        console.log('Network drawn, visible nodes:', network.getVisibleNodes().length);
+      } else {
+        console.log('Network drawn');
+      }
+    } catch (e) {
+      console.log('Network drawn (debug error ignored):', e);
+    }
   });
 
   // Download visualization
@@ -728,7 +894,16 @@
     
     // Debug render
     communityNetworks[communityId].on("afterDrawing", function() {
-      console.log(`Community ${communityId} drawn, visible nodes:`, communityNetworks[communityId].getVisibleNodes().length);
+      try {
+        const net = communityNetworks[communityId];
+        if (net && typeof net.getVisibleNodes === 'function') {
+          console.log(`Community ${communityId} drawn, visible nodes:`, net.getVisibleNodes().length);
+        } else {
+          console.log(`Community ${communityId} drawn`);
+        }
+      } catch (e) {
+        console.log(`Community ${communityId} drawn (debug error ignored):`, e);
+      }
     });
   }
 </script>
