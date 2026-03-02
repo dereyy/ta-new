@@ -70,9 +70,13 @@ def preprocessing_index(request):
         messages.error(request, 'Format data tidak sesuai. Data harus berupa list of dict dengan key: accession, protein_name, gene_symbol, organism. Silakan pilih atau upload data yang benar dari halaman Input Data Gen.')
         return redirect('uniprot_input_data_gen')
 
+    # Sort data berdasarkan gene_symbol (alphabetical order) agar duplikat terlihat berdekatan
+    # Ini memudahkan user untuk melihat mana yang akan dihapus saat preprocessing
+    valid_data_sorted = sorted(valid_data, key=lambda x: (x.get('gene_symbol', '').lower(), x.get('accession', '')))
+
     # Fallback: pastikan preview selalu punya key yang dibutuhkan
     preview_data = []
-    for row in valid_data[:5]:
+    for row in valid_data_sorted:  # Tampilkan SEMUA data
         preview_data.append({
             'accession': row.get('accession', '-'),
             'protein_name': row.get('protein_name', '-'),
@@ -82,16 +86,16 @@ def preprocessing_index(request):
 
     context = {
         'data': preview_data,
-        'total_count': len(valid_data),
-        'original_count': request.session.get('preprocessing_original_count', len(valid_data)),
+        'total_count': len(valid_data_sorted),
+        'original_count': request.session.get('preprocessing_original_count', len(valid_data_sorted)),
         'data_source': data_source,
         'duplicates_removed': duplicates_removed,
     }
 
-    # Update session dengan data yang valid saja
-    request.session['preprocessing_data'] = valid_data
+    # Update session dengan data yang valid dan sudah terurut (sorted by gene_symbol)
+    request.session['preprocessing_data'] = valid_data_sorted
     # Simpan gene symbol unik ke session dengan nama preprocessing_genes
-    gene_symbols = [row.get('gene_symbol') for row in valid_data if row.get('gene_symbol')]
+    gene_symbols = [row.get('gene_symbol') for row in valid_data_sorted if row.get('gene_symbol')]
     request.session['preprocessing_genes'] = list(sorted(set(gene_symbols)))
     request.session.modified = True
 

@@ -261,13 +261,13 @@ body {
         overflow-x: auto;
         border: 1px solid #e5e5e5;
         border-radius: 8px;
-        max-height: 400px;
+        max-height: 600px;
       }
 
       table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 0.95rem;
+        font-size: 0.85rem;
         background: white;
       }
       thead {
@@ -277,14 +277,15 @@ body {
         z-index: 10;
       }
       th {
-        padding: 12px;
+        padding: 8px;
         text-align: left;
         font-weight: bold;
         color: #1976d2;
         border-bottom: 2px solid #e5e5e5;
+        white-space: nowrap;
       }
       td {
-        padding: 12px;
+        padding: 8px;
         border-bottom: 1px solid #e5e5e5;
         color: #333;
       }
@@ -359,7 +360,7 @@ body {
           <div class="preprocessing-container">
             <!-- LEFT SIDE: Data Preview -->
             <div class="preprocessing-right">
-              <h3>📋 Preview Data (5 baris pertama)</h3>
+              <h3>📋 Preview Data (Semua data)</h3>
 
               {% if data %}
               <div class="table-wrapper">
